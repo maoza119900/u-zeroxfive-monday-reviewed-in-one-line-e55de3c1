@@ -6,7 +6,7 @@
 // The text is fixed: byte-deterministic, no randomness, no timestamps,
 // no network, no environment reads beyond the output directory.
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const REVIEW =
@@ -37,6 +37,14 @@ function main(): void {
   const outPath = join(outDir, "entry.txt");
   // No trailing newline: the file is exactly the one line, nothing else.
   writeFileSync(outPath, REVIEW, "utf8");
+
+  // Verify the write landed byte-for-byte: read the file back and
+  // refuse to report success if anything on disk differs from the
+  // review (partial write, encoding surprise, stray trailing newline).
+  const written = readFileSync(outPath, "utf8");
+  if (written !== REVIEW) {
+    fail(`${outPath} does not match the review after writing`);
+  }
 
   console.log(`wrote ${outPath} (${chars.length} characters)`);
   console.log(REVIEW);
